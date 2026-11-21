@@ -6,6 +6,7 @@ from wsgiref.simple_server import make_server
 BASE = Path(__file__).resolve().parent
 ROWS = json.loads((BASE/'voters.json').read_text(encoding='utf-8'))
 HTML = (BASE/'index.html').read_bytes()
+BASKET = (BASE/'basket.png').read_bytes()
 
 def normalize(s):
     return ' '.join(unicodedata.normalize('NFKC', str(s or '')).casefold().split())
@@ -13,15 +14,18 @@ def normalize(s):
 INDEX = [(r, normalize(r[2]), normalize(r[3])) for r in ROWS]
 PAGE_SIZE = 25
 
-def search(query, field='both', mode='prefix', page=1):
-    q = normalize(query)
-    if not q or (mode == 'prefix' and len(q) < 4):
-        raise ValueError('Enter at least 4 characters for a prefix search, or select Full name for a shorter exact name.')
-    if len(q)>120: raise ValueError('Search text is too long.')
-    if field not in ('both','surname','name') or mode not in ('prefix','exact'):
-        raise ValueError('Invalid search options.')
-    def match(v): return v == q if mode=='exact' else v.startswith(q)
-    result = [r for r,s,n in INDEX if (field in ('both','surname') and match(s)) or (field in ('both','name') and match(n))]
+def search(name='', surname='', page=1):
+    name, surname = normalize(name), normalize(surname)
+    if not name and not surname:
+        raise ValueError('Enter a NAME or SURNAME, or both.')
+    if len(name)>120 or len(surname)>120:
+        raise ValueError('Search text is too long.')
+    def match(value, query):
+        return not query or value == query or (len(query) >= 4 and value.startswith(query))
+    # Both populated fields must match the same record. Blank fields are optional.
+    # Present NAME before SURNAME; preserve original source ordering.
+    result = [[r[0], r[1], r[3], r[2], *r[4:]] for r,s,n in INDEX
+              if match(n, name) and match(s, surname)]
     pages = max(1,(len(result)+PAGE_SIZE-1)//PAGE_SIZE)
     page = max(1,min(page,pages))
     return {'rows':result[(page-1)*PAGE_SIZE:page*PAGE_SIZE], 'total':len(result),'page':page,'pages':pages,'pageSize':PAGE_SIZE}
@@ -33,11 +37,13 @@ def application(environ, start_response):
         status='405 Method Not Allowed'; body=b'{"error":"Method not allowed"}'
     elif path=='/':
         body=HTML; typ='text/html; charset=utf-8'
+    elif path=='/basket.png':
+        body=BASKET; typ='image/png'
     elif path=='/api/search':
         params=parse_qs(environ.get('QUERY_STRING',''))
         get=lambda k,d:params.get(k,[d])[0]
         try:
-            result=search(get('q',''),get('field','both'),get('mode','prefix'),int(get('page','1')))
+            result=search(get('name',''),get('surname',''),int(get('page','1')))
         except ValueError as e:
             result={'error':str(e)};status='400 Bad Request'
         body=json.dumps(result,ensure_ascii=False).encode('utf-8')
