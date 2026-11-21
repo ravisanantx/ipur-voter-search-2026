@@ -21,7 +21,7 @@ def search(name='', surname='', page=1):
     if len(name)>120 or len(surname)>120:
         raise ValueError('Search text is too long.')
     def match(value, query):
-        return not query or value == query or (len(query) >= 4 and value.startswith(query))
+        return not query or value == query or (len(query) >= 3 and value.startswith(query))
     # Both populated fields must match the same record. Blank fields are optional.
     # Present NAME before SURNAME; preserve original source ordering.
     result = [[r[0], r[1], r[3], r[2], *r[4:]] for r,s,n in INDEX
