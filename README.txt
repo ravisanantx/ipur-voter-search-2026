@@ -34,3 +34,16 @@ Display order: Ward, S NO, NAME, SURNAME, F/H Name, H NO, AGE, M/F.
 The banner uses the included basket.png image on both sides of the Telugu text. For an existing Render deployment,
 replace app.py, index.html, and voters.json in the same repository folder,
 then commit and redeploy. Keep the existing basket.png, or upload it if missing.
+
+TELUGU DISPLAY (NEW)
+--------------------
+The Telugu results switch displays Telugu names and related-person names
+from the provided 2026 Telugu source workbook, matched by unique S NO.
+The Telugu source separates personal name and surname at the last space;
+this may not perfectly match the English NAME/SURNAME arrangement in every
+record. One source Telugu name is blank and is not fabricated.
+The application continues to use the existing English dataset for Ward,
+S NO, H NO, AGE and M/F (translated label). Some discrepancies exist
+between the original English and Telugu files; check the official roll.
+Both English and Telugu name/surname queries can be used with either mode.
+Do not expose voters_telugu.json as a public static file.
