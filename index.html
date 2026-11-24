@@ -17,8 +17,8 @@ main > section.panel:first-child .fields button { min-height: 40.5px; padding-to
 const $=id=>document.getElementById(id);
 let active=null,current=1,seq=0,lang='en';
 const strings={
- en:{headers:['Ward','S NO','NAME','SURNAME','F/H Name','H NO','AGE','M/F'],heading:'Search results',clear:'Clear search',prev:'Previous',next:'Next',intro:'Enter NAME, SURNAME or H NO to begin.',noSearch:'No search yet',searching:'Searching…',notFound:'No matching voters. Check the spelling or search another name.',none:'0 matching records',page:(p,n)=>`Page ${p} of ${n}`,count:(d)=>`${d.total.toLocaleString()} matching records · showing ${(d.page-1)*d.pageSize+1}–${Math.min(d.page*d.pageSize,d.total)}`,failed:'Search not completed.',retry:'Try another search.',error:'Enter NAME, SURNAME, or H NO.',hnoError:'H NO must contain numbers only (hyphen - or slash / allowed).'},
- te:{headers:['వార్డు','సీరియల్ నం.','పేరు','ఇంటి పేరు','తండ్రి / భర్త పేరు','ఇంటి నం.','వయస్సు','లింగం'],heading:'ఓటరు శోధన ఫలితాలు',clear:'సెర్చ్ తొలగించు',prev:'మునుపటి',next:'తదుపరి',intro:'పేరు, ఇంటి పేరు లేదా ఇంటి నంబర్ నమోదు చేయండి.',noSearch:'ఇంకా వెతకలేదు',searching:'వెతుకుతోంది…',notFound:'ఓటర్లు కనబడలేదు. పేరు లేదా ఇంటి నంబర్‌ను పరిశీలించండి.',none:'సరిపోలిన ఓటర్లు: 0',page:(p,n)=>`పేజీ ${p} / ${n}`,count:(d)=>`సరిపోలిన ఓటర్లు: ${d.total.toLocaleString()} · చూపిస్తున్నవి ${(d.page-1)*d.pageSize+1}–${Math.min(d.page*d.pageSize,d.total)}`,failed:'శోధన పూర్తి కాలేదు.',retry:'మళ్ళీ ప్రయత్నించండి.',error:'పేరు, ఇంటి పేరు లేదా ఇంటి నంబర్ నమోదు చేయండి.',hnoError:'ఇంటి నంబర్‌లో అంకెలు మాత్రమే నమోదు చేయండి (- లేదా / అనుమతించబడతాయి).'}
+ en:{headers:['Ward','S NO','NAME','SURNAME','F/H Name','H NO','AGE','M/F'],heading:'Search results',clear:'Clear search',prev:'Previous',next:'Next',intro:'Enter NAME, SURNAME or H NO to begin.',noSearch:'No search yet',searching:'Searching…',notFound:'No matching voter records found. Please enter correct NAME, SURNAME, or H NO details and search again.',none:'0 matching records',page:(p,n)=>`Page ${p} of ${n}`,count:(d)=>`${d.total.toLocaleString()} matching records · showing ${(d.page-1)*d.pageSize+1}–${Math.min(d.page*d.pageSize,d.total)}`,failed:'Search not completed.',retry:'Try another search.',error:'Enter NAME, SURNAME, or H NO.',hnoError:'H NO must contain numbers only (hyphen - or slash / allowed).'},
+ te:{headers:['వార్డు','సీరియల్ నం.','పేరు','ఇంటి పేరు','తండ్రి / భర్త పేరు','ఇంటి నం.','వయస్సు','లింగం'],heading:'ఓటరు శోధన ఫలితాలు',clear:'సెర్చ్ తొలగించు',prev:'మునుపటి',next:'తదుపరి',intro:'పేరు, ఇంటి పేరు లేదా ఇంటి నంబర్ నమోదు చేయండి.',noSearch:'ఇంకా వెతకలేదు',searching:'వెతుకుతోంది…',notFound:'సరిపోలే ఓటరు వివరాలు కనబడలేదు. దయచేసి సరైన పేరు, ఇంటి పేరు లేదా ఇంటి నంబర్ నమోదు చేసి మళ్లీ వెతకండి.',none:'సరిపోలిన ఓటర్లు: 0',page:(p,n)=>`పేజీ ${p} / ${n}`,count:(d)=>`సరిపోలిన ఓటర్లు: ${d.total.toLocaleString()} · చూపిస్తున్నవి ${(d.page-1)*d.pageSize+1}–${Math.min(d.page*d.pageSize,d.total)}`,failed:'శోధన పూర్తి కాలేదు.',retry:'మళ్ళీ ప్రయత్నించండి.',error:'పేరు, ఇంటి పేరు లేదా ఇంటి నంబర్ నమోదు చేయండి.',hnoError:'ఇంటి నంబర్‌లో అంకెలు మాత్రమే నమోదు చేయండి (- లేదా / అనుమతించబడతాయి).'}
 };
 function words(){return strings[lang]}
 function empty(message){$('rows').replaceChildren();const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=8;td.className='empty';td.textContent=message;tr.append(td);$('rows').append(tr);$('pager').hidden=true;}
@@ -43,7 +43,15 @@ async function run(page){
   current=data.page;$('rows').replaceChildren();
   for(const row of data.rows){const tr=document.createElement('tr');for(const value of row){const td=document.createElement('td');td.textContent=value===null||value===''?'—':String(value);tr.append(td)}$('rows').append(tr)}
   $('status').textContent=data.total?words().count(data):words().none;
-  if(!data.total)empty(words().notFound);
+  if(!data.total){
+   // Clear stale criteria and any previously entered text after an unsuccessful search.
+   active=null;current=1;
+   $('form').reset();$('hno').setCustomValidity('');
+   error(words().notFound);
+   $('status').textContent=words().none;
+   empty(words().notFound);
+   $('name').focus();
+  }
   $('pager').hidden=data.pages<=1;
   $('page').textContent=words().page(data.page,data.pages);
   $('prev').disabled=data.page<=1;$('next').disabled=data.page>=data.pages;
