@@ -17,6 +17,8 @@ PAGE_SIZE = 25
 
 def search(name='', surname='', page=1, hno='', lang='en'):
     name, surname, hno = normalize(name), normalize(surname), normalize(hno)
+    if hno and not re.fullmatch(r'[0-9/\-]+', hno):
+        raise ValueError('H NO must contain numbers only (hyphen - or slash / allowed).')
     if not name and not surname and not hno:
         raise ValueError('Enter NAME, SURNAME, or H NO.')
     if any(len(v)>120 for v in (name, surname, hno)):
